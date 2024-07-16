@@ -1,0 +1,45 @@
+# root directory
+dataset_dir: D:\datasets
+output_dir: D:\results
+
+#processed_datasets: [CelebDF, DFDC, DFD, FaceForensics++, FakeAVCeleb, SelfGenerated]
+processed_datasets: [CelebDF]
+
+dataset_info:
+  CelebDF:
+    folder: Celeb-DF-v2
+    technique: faceswap
+    original: 32
+    manipulated: 200 
+
+  DFDC:
+    folder: DFDC
+    technique: faceswap
+    label_file: labels.csv
+    original: 45
+    manipulated: 200 
+
+  DFD:
+    folder: ff-videos
+    technique: faceswap
+    original: 10
+    manipulated: 100 
+
+  FaceForensics++:
+    folder: ff-videos
+    original: 50
+    manipulated: 200 
+
+  FakeAVCeleb:
+    folder: FakeAVCeleb_v1.2
+    label_file: meta_data.csv
+    original: 20
+    manipulated: 200
+
+  SelfGenerated:
+    folder: self-generated
+    orignial: 5
+    manipulated: 5
+
+compression: c23
+augmentation_techniques: [gra_3, gra_6, ncs_3, ncs_6, dem_3, dem_6, statattack]

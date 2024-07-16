@@ -1,0 +1,7 @@
+﻿name,label,technique,source,tool,augmentation,content
+0001.mp4,1,faceswap,academic,-,-,-
+0002.mp4,1,reenactment,academic,-,c23,-
+0003.mp4,1,faceswap,self-generated,deepfakelab,gra_002,Investment Scam
+0004.mp4,1,lipsync,academic,-,-,-
+0005.mp4,1,faceswap-lipsync,self-generated,deepfakelab-wav2lip,dem_001,Birthday Wish
+0006.mp4,0,-,academic,-,c40,-

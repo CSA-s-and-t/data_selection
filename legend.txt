@@ -1,0 +1,9 @@
+name - the name of the video file in the dataset
+target - the target video that was used to generate the current deepfake / augmented video (if any)
+label - the ground truth for the video (0 for real, 1 for deepfake manipulated)
+technique - the broad category of deepfake technique (faceswap, lipsync, voice clone etc.) used for generating the video
+source - the source of the dataset (dataset name or self-generated)
+compression - the level of compression applied on the final videos
+tool - if self-generated, the specific tools used to make the video
+augmentation - if augmented, the specific augmentation technique used (labelled <technique>_<epsilon>)
+content - if self-generated, a label of the type of content generated
