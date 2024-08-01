@@ -8,6 +8,11 @@ import pandas as pd
 
 NA_CHARACTER = '-'
 
+'''
+The goal of this script is to perform the random sampling of the videos based on our configuration settings (config.yaml), saving all the data
+into a collated CSV file (with paths to each file) test.csv
+'''
+
 main_df = pd.DataFrame(columns=['original_path', 'label', 'technique', 'source'])
 
 def add_to_df(paths: list[str], label, source, technique = NA_CHARACTER):
@@ -30,7 +35,6 @@ def get_videos(original_dataset_paths, manipulated_dataset_paths, num_original, 
 
         # get list of video paths in folder without visiting subdirectories
         video_list =  [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        #video_list = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames] 
 
         # sample num_original videos from this list and add to dataframe
         add_to_df(random.sample(video_list, num_original), 0, dataset_name)
@@ -43,7 +47,6 @@ def get_videos(original_dataset_paths, manipulated_dataset_paths, num_original, 
 
         # get list of video paths in folder without visiting subdirectories
         video_list =  [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-        #video_list = [os.path.join(dp, f) for dp, dn, filenames in os.walk(path) for f in filenames] 
 
         # if no default technique is specified (ff++), get technique from path name
         if dataset_name == 'FaceForensics++':
@@ -70,7 +73,7 @@ def get_videos_label(dataset_paths, root_path, num_original, num_manipulated, la
         types = ['FakeVideo-RealAudio', 'FakeVideo-RealAudio', 'FakeVideo-RealAudio', 'FakeVideo-FakeAudio', 'FakeVideo-FakeAudio', 'FakeVideo-FakeAudio']
         methods = ['faceswap', 'fsgan', 'wav2lip', 'faceswap-wav2lip', 'fsgan-wav2lip', 'wav2lip']
         techniques = ['faceswap', 'faceswap', 'lipsync', 'faceswap-lipsync-voiceclone', 'faceswap-lipsync-voiceclone', 'lipsync-voiceclone']
-        sample_sizes = even_divide(num_manipulated, 6)
+        sample_sizes = even_divide(num_manipulated, len(methods))
         for i in range(6):
             temp_df = df[(df['type'] == types[i]) & (df['method'] == methods[i])].sample(sample_sizes[i])
             video_list = [os.path.join(root_path, item) for item in temp_df['path'].str[12:] + '/' + temp_df['name']]
@@ -156,8 +159,8 @@ def main():
             sub_dataset_paths = None
 
         elif dataset_name == 'SelfGenerated':
-            original_dataset_names = ['fake']
-            manipulated_dataset_names = ['real']
+            original_dataset_names = ['original']
+            manipulated_dataset_names = ['manipulated']
             original_dataset_paths = [Path(os.path.join(dataset_path, name)) for name in original_dataset_names]
             manipulated_dataset_paths = [Path(os.path.join(dataset_path, name)) for name in manipulated_dataset_names]
         
@@ -166,24 +169,34 @@ def main():
         else:
             get_videos_label(sub_dataset_paths, dataset_path, num_original, num_manipulated, label_path, dataset_name, dataset_technique)
         
+
     augmentation_techniques = config['augmentation_techniques']
-    # sample 10 videos to use for augmentation, 5 from fakeavceleb and 5 from celeb-df-v2 
-    augmented_df = pd.concat([main_df[(main_df['source'] == 'CelebDF') & (main_df['label'] == 1)].sample(5), main_df[main_df['technique'].str.contains('lipsync')].sample(5)])
+
+    # sample 15 videos to use for augmentation, 5 from fakeavceleb, 5 from celeb-df-v2, all from self generated
+    N_SAMPLE = 5
+    augmented_df = pd.concat([main_df[(main_df['source'] == 'CelebDF') & (main_df['label'] == 1)].sample(N_SAMPLE), 
+                              main_df[(main_df['source'] == 'FakeAVCeleb') & (main_df['technique'].str.contains('lipsync'))].sample(N_SAMPLE),
+                              main_df[(main_df['source'] == 'SelfGenerated') & (main_df['label'] == 1)].sample(N_SAMPLE)])
     augmented_df["target"] = '-'
+
     for index, row in augmented_df.iterrows():
+        #transfer videos to new folder to_augment for next step: augmentation
         src_file = row["original_path"]
         dst_folder = os.path.join(dataset_root_path, 'to_augment')
         new_path = shutil.copy(src_file, dst_folder)
         augmented_df.at[index, "target"] = row["original_path"]
         augmented_df.at[index, "original_path"] = new_path.replace('to_augment', 'augmented')
     
+    # add augmentations
     augmented_df = augmented_df.loc[augmented_df.index.repeat(len(augmentation_techniques))].reset_index(drop=True)
-    augmented_df['augmentation'] = np.tile(augmentation_techniques, 10)
+    augmented_df['augmentation'] = np.tile(augmentation_techniques, len(augmented_df))
     augmented_df['original_path'] = augmented_df['original_path'].str.removesuffix('.mp4') + '_' + augmented_df['augmentation'] + '.mp4'
 
     main_df['target'] = '-'
     main_df['augmentation'] = '-'
-    pd.concat([main_df, augmented_df], ignore_index=True).to_csv('test.csv')
+    main_df['tool'] = '-'
+    main_df['content'] = '-'
+    pd.concat([main_df, augmented_df], ignore_index=True).to_csv('test.csv', index=False)
 
 if __name__ == "__main__":
     main()

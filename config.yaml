@@ -1,45 +1,46 @@
 # root directory
 dataset_dir: D:\datasets
-output_dir: D:\results
+output_dir: D:\collated
 
-#processed_datasets: [CelebDF, DFDC, DFD, FaceForensics++, FakeAVCeleb, SelfGenerated]
-processed_datasets: [CelebDF]
+processed_datasets: [CelebDF, DFDC, DFD, FaceForensics++, FakeAVCeleb, SelfGenerated]
+#processed_datasets: [CelebDF]
 
 dataset_info:
   CelebDF:
     folder: Celeb-DF-v2
     technique: faceswap
-    original: 32
+    original: 200 #32
     manipulated: 200 
 
   DFDC:
     folder: DFDC
     technique: faceswap
     label_file: labels.csv
-    original: 45
+    original: 200 #45
     manipulated: 200 
 
   DFD:
     folder: ff-videos
     technique: faceswap
-    original: 10
+    original: 100 #10
     manipulated: 100 
 
   FaceForensics++:
     folder: ff-videos
-    original: 50
+    original: 200 #50
     manipulated: 200 
 
   FakeAVCeleb:
     folder: FakeAVCeleb_v1.2
     label_file: meta_data.csv
-    original: 20
+    original: 200 #20
     manipulated: 200
 
   SelfGenerated:
     folder: self-generated
-    orignial: 5
+    technique: lipsync-voiceclone
+    original: 5
     manipulated: 5
 
 compression: c23
-augmentation_techniques: [gra_3, gra_6, ncs_3, ncs_6, dem_3, dem_6, statattack]
+augmentation_techniques: [gra_3, gra_6, ncs_3, ncs_6, dem_3, dem_6, decowa_3, decowa_6, vmifgsm_3, vmifgsm_6]
