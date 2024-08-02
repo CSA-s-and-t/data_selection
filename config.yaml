@@ -42,5 +42,5 @@ dataset_info:
     original: 5
     manipulated: 5
 
-compression: c23
+compression: [c23, c40]
 augmentation_techniques: [gra_3, gra_6, ncs_3, ncs_6, dem_3, dem_6, decowa_3, decowa_6, vmifgsm_3, vmifgsm_6]

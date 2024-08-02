@@ -188,8 +188,9 @@ def main():
         augmented_df.at[index, "original_path"] = new_path.replace('to_augment', 'augmented')
     
     # add augmentations
+    tiling = np.tile(augmentation_techniques, len(augmented_df))
     augmented_df = augmented_df.loc[augmented_df.index.repeat(len(augmentation_techniques))].reset_index(drop=True)
-    augmented_df['augmentation'] = np.tile(augmentation_techniques, len(augmented_df))
+    augmented_df['augmentation'] = tiling
     augmented_df['original_path'] = augmented_df['original_path'].str.removesuffix('.mp4') + '_' + augmented_df['augmentation'] + '.mp4'
 
     main_df['target'] = '-'
