@@ -150,7 +150,8 @@ def main(args):
     c_compression = args.compression
     num_videos = args.num_videos
     output_path = args.output_path
-    index = random.sample(range(1000), num_videos)
+    if num_videos is not None:
+        index = random.sample(range(1000), num_videos)
     os.makedirs(output_path, exist_ok=True)
 
     # Check for special dataset cases

@@ -1,6 +1,6 @@
 # root directory
-dataset_dir: D:\datasets
-output_dir: D:\collated
+dataset_dir: E:\datasets
+output_dir: E:\collated_wd
 
 processed_datasets: [CelebDF, DFDC, DFD, FaceForensics++, FakeAVCeleb, SelfGenerated]
 #processed_datasets: [CelebDF]
@@ -22,12 +22,12 @@ dataset_info:
   DFD:
     folder: ff-videos
     technique: faceswap
-    original: 100 #10
+    original: 90 #10
     manipulated: 100 
 
   FaceForensics++:
     folder: ff-videos
-    original: 200 #50
+    original: 186 #50
     manipulated: 200 
 
   FakeAVCeleb:

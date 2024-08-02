@@ -80,7 +80,10 @@ def main():
         elif row['compression'] == 'c40':
             os.system(ffmpeg_compress.format(input_video_file = row['original_path'], output_video_file = output_video_file, rate_factor = 40))
         else:
-            shutil.copy(row['original_path'], output_video_file)
+            try:
+                shutil.copy(row['original_path'], output_video_file)
+            except Exception as e:
+                print(f"missing file {row['original_path']}")
     
 if __name__ == "__main__":
     main()
