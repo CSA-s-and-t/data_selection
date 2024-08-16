@@ -13,15 +13,14 @@ The goal of this script is to perform the random sampling of the videos based on
 into a collated CSV file (with paths to each file) test.csv
 '''
 
-main_df = pd.DataFrame(columns=['original_path', 'label', 'target', 'technique', 'source'])
+main_df = pd.DataFrame(columns=['original_path', 'label', 'technique', 'source'])
 
-def add_to_df(paths: list[str], label, source, target = NA_CHARACTER, technique = NA_CHARACTER):
+def add_to_df(paths: list[str], label, source, technique = NA_CHARACTER):
     global main_df
     temp_df = pd.DataFrame()
     temp_df['original_path'] = paths
     temp_df['label'] = label
     temp_df['technique'] = technique
-    temp_df['target'] = target
     temp_df['source'] = source
     main_df = pd.concat([main_df, temp_df], ignore_index=True)
 
@@ -30,81 +29,42 @@ def even_divide(num, div):
     return [group_size + (1 if x < remainder else 0) for x in range(div)]
 
 def get_videos(original_dataset_paths, manipulated_dataset_paths, num_original, num_manipulated, dataset_name, dataset_technique):
-    assert num_manipulated == num_original
-
-    # Step 1: Get original videos
     for path in original_dataset_paths:
         if not os.path.exists(path):
             print(f"No path {path} detected")
 
-        # for celebdf, some original videos do not have corresponding deepfakes. need to remove them from the sampled list
-        if dataset_name == 'CelebDF':
-            video_list = list(set([os.path.join(path, f.split('_')[-3] + '_' + f.split('_')[-1]) for f in os.listdir(manipulated_dataset_paths[0]) 
-                                   if os.path.isfile(os.path.join(manipulated_dataset_paths[0], f))]))
-            
         # get list of video paths in folder without visiting subdirectories
-        else:
-            video_list =  [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+        video_list =  [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
         # sample num_original videos from this list and add to dataframe
-        video_list = random.sample(video_list, num_original)
-        add_to_df(video_list, 0, dataset_name)
-    
-    # Step 2: Get list of manipulated videos
-    video_list_manip = []
+        add_to_df(random.sample(video_list, num_original), 0, dataset_name)
+        
     sample_sizes = even_divide(num_manipulated, len(manipulated_dataset_paths))
 
-    for path in manipulated_dataset_paths:
+    for (path, size) in zip(manipulated_dataset_paths, sample_sizes):
         if not os.path.exists(path):
             print(f"No path {path} detected")
 
         # get list of video paths in folder without visiting subdirectories
-        video_list_manip.append([os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))])
-    
-    # Step 3: Pair original videos with manipulated videos
+        video_list =  [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
-    #DFD is fundamentally unpaired
-    if dataset_name == 'DFD':
-        add_to_df(random.sample(video_list_manip[0], num_manipulated), 1, dataset_name, '-', dataset_technique)
-        return
-        
-    for orig_video in video_list: # orig_video is path to orignial video
-        orig_video_name = Path(orig_video).name
-        for i in range(len(sample_sizes)):
-            if sample_sizes[i] == 0:
-                continue
+        # if no default technique is specified (ff++), get technique from path name
+        if dataset_name == 'FaceForensics++':
+            if 'Deepfakes' in video_list[0] or 'FaceSwap' in video_list[0]:
+                dataset_technique = 'faceswap'
+            elif 'NeuralTextures' in video_list[0] or 'Face2Face' in video_list[0]:
+                dataset_technique = 'facemanip'
 
-            # if no default technique is specified (ff++), get technique from path name
-            if dataset_name == 'FaceForensics++':
-                fake_video = [video for video in video_list_manip[i] if (orig_video_name.removesuffix('.mp4') + '_') in video]
-                if len(fake_video) > 0:
-                    if 'Deepfakes' in manipulated_dataset_paths[i]._str or 'FaceSwap' in manipulated_dataset_paths[i]._str:
-                        dataset_technique = 'faceswap'
-                    elif 'NeuralTextures' in manipulated_dataset_paths[i]._str or 'Face2Face' in manipulated_dataset_paths[i]._str:
-                        dataset_technique = 'facemanip'
-                    add_to_df(random.sample(fake_video, 1), 1, dataset_name, orig_video, dataset_technique)
-                    sample_sizes[i] -= 1
-                    break
-            
-            elif dataset_name == 'CelebDF':
-                fake_video = [video for video in video_list_manip[i] if orig_video_name in (video.split('_')[-3] + '_' + video.split('_')[-1])]
-                assert len(fake_video) > 0
-                add_to_df(random.sample(fake_video, 1), 1, dataset_name, orig_video, dataset_technique)
-            
-            elif dataset_name == 'SelfGenerated':
-                fake_video = os.path.join(manipulated_dataset_paths[i], orig_video_name.replace('real', 'fake'))
-                assert os.path.isfile(fake_video)
-                add_to_df([fake_video], 1, dataset_name, orig_video, dataset_technique)
-
+        # sample num_manipulated videos from this list and add to dataframe
+        add_to_df(random.sample(video_list, size), 1, dataset_name, dataset_technique)
 
 def get_videos_label(dataset_paths, root_path, num_original, num_manipulated, label_file, dataset_name, dataset_technique):
-    assert num_manipulated == num_original
     if not os.path.exists(label_file):
         print(f"No path {label_file} detected")
         return
     
     df = pd.read_csv(label_file)
-    # Processing FakeAVCeleb: first take n reals. then, from the pool of reals, take faceswap / fsgan / wav2lip from FakeVideo real audio, and faceswap / fsgan / wav2lip from fake video fake audio
+    # Processing FakeAVCeleb: take faceswap / fsgan / wav2lip from FakeVideo real audio, and faceswap / fsgan / wav2lip from fake video fake audio
     if 'race' in df: 
         original_df = df[df['method'] == 'real'].sample(num_original)
         video_list = [os.path.join(root_path, item) for item in original_df['path'].str[12:] + '/' + original_df['name']]
@@ -114,19 +74,12 @@ def get_videos_label(dataset_paths, root_path, num_original, num_manipulated, la
         methods = ['faceswap', 'fsgan', 'wav2lip', 'faceswap-wav2lip', 'fsgan-wav2lip', 'wav2lip']
         techniques = ['faceswap', 'faceswap', 'lipsync', 'faceswap-lipsync-voiceclone', 'faceswap-lipsync-voiceclone', 'lipsync-voiceclone']
         sample_sizes = even_divide(num_manipulated, len(methods))
-        for _, row in original_df.iterrows():
-            for i in range(len(sample_sizes)):
-                if sample_sizes[i] == 0:
-                    continue
-                temp_df = df[(df['source'] == row['source']) & (df['type'] == types[i]) & (df['method'] == methods[i])]
-                if len(temp_df) > 0:
-                    sample_sizes[i] -= 1
-                    temp_df = temp_df.sample(1).iloc[0]
-                    add_to_df([os.path.join(root_path, temp_df['path'][12:] + '/' + temp_df['name'])], 1, dataset_name, 
-                              os.path.join(root_path, row['path'][12:] + '/' + row['name']), techniques[i])
-                    break
+        for i in range(6):
+            temp_df = df[(df['type'] == types[i]) & (df['method'] == methods[i])].sample(sample_sizes[i])
+            video_list = [os.path.join(root_path, item) for item in temp_df['path'].str[12:] + '/' + temp_df['name']]
+            add_to_df(video_list, 1, dataset_name, techniques[i])
     
-    # Processing DFDC: no matching of reals and fakes. sample from the label file, pool all the folders, and find it in the folder listing
+    # Processing DFDC: sample from the label file, pool all the folders, and find it in the folder listing
     else:
         video_list = []        
         original_df = df[df['label'] == 0].sample(num_original)
@@ -146,7 +99,7 @@ def get_videos_label(dataset_paths, root_path, num_original, num_manipulated, la
                 if os.path.exists(file_path):
                     video_list.append(file_path)
                     break        
-        add_to_df(video_list, 1, dataset_name, '-', dataset_technique)
+        add_to_df(video_list, 1, dataset_name, dataset_technique)
 
 
 def main():
@@ -240,10 +193,11 @@ def main():
     augmented_df['augmentation'] = tiling
     augmented_df['original_path'] = augmented_df['original_path'].str.removesuffix('.mp4') + '_' + augmented_df['augmentation'] + '.mp4'
 
+    main_df['target'] = '-'
     main_df['augmentation'] = '-'
     main_df['tool'] = '-'
     main_df['content'] = '-'
-    pd.concat([main_df, augmented_df], ignore_index=True).to_csv('test.csv', index=False) 
+    pd.concat([main_df, augmented_df], ignore_index=True).to_csv('test.csv', index=False)
 
 if __name__ == "__main__":
     main()
